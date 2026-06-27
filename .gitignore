@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# Source material (not needed for deploy)
+Child labour survey -SAKAR.pptx
+certificate-designs/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
