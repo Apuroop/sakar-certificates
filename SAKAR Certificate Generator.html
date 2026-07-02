@@ -39,7 +39,7 @@
   .cert .title{line-height:1.06;margin:0;}
   .cert .recipient{line-height:1;}
   .cert .para{margin:0 auto;}
-  .cert .summary{font-style:italic;}
+  .cert .summary{font-style:italic;display:block;margin:8px auto;}
   .cert .sigs{position:absolute;bottom:86px;left:0;right:0;display:flex;justify-content:space-around;}
   .cert .sig{width:300px;text-align:center;}
   .cert .sig .line{height:1px;background:#9aa3ad;margin-bottom:9px;}
@@ -242,8 +242,9 @@ function render(){
   document.getElementById("o-name").textContent=name;
 
   var para="a student of <b>"+esc(inst)+"</b> has successfully completed a Summer Internship with <b>SAKAR</b>. "
-    +"During the internship, they contributed to the project "
-    +"<span class='summary'>“"+esc(SUMMARY)+"”</span>, demonstrating dedication, initiative and a sincere "
+    +"During the internship, they contributed to the project:"
+    +"<span class='summary'>“"+esc(SUMMARY)+"”</span>"
+    +"They demonstrated dedication, initiative and a sincere "
     +"commitment to the cause of child welfare. We wish them every success in their future endeavours.";
   document.getElementById("o-para").innerHTML=para;
 
