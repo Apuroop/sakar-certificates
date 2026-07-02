@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500&family=Manrope:wght@400;600;700;800&family=Newsreader:ital,opsz,wght@0,18..72,400;0,18..72,600;1,18..72,400&family=Pinyon+Script&family=Playfair+Display:wght@600;700&family=Tangerine:wght@700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{--sakar-blue:#1c84c6;--sakar-blue-dark:#13638f;--navy:#102a43;}
   *{box-sizing:border-box;}
@@ -191,8 +192,15 @@
     </div>
 
     <hr>
-    <button class="download" onclick="downloadPDF()">⬇ Download high-res PDF</button>
+    <button class="download" onclick="downloadPDF()">⬇ Download this certificate (PDF)</button>
     <p class="hint">PDF is A4 landscape (297×210 mm) rendered at ~3× for crisp printing. In the print dialog choose “Actual size” / 100% scale.</p>
+
+    <hr>
+    <p class="grp-title">Bulk generate from CSV</p>
+    <div class="field"><label>CSV file (needs a Name &amp; Roll column)</label>
+      <input type="file" id="f-csv" accept=".csv" onchange="loadCSV(event)"></div>
+    <button class="download" id="bulk-btn" onclick="generateBatch()" disabled style="background:#0f9d58;">⬇ Generate all as ZIP</button>
+    <p class="hint" id="bulk-status">Institution/programme, duration, place and both signatories set above are applied to every certificate. Only the name and roll number come from the CSV. The current design style is used for all.</p>
   </div>
 
   <div class="stage">
@@ -286,6 +294,96 @@ function downloadPDF(){
     var nm=(document.getElementById("f-name").value||"certificate").replace(/[^a-z0-9]+/gi,"_");
     pdf.save("SAKAR_Internship_Certificate_"+nm+".pdf");
   });
+}
+
+/* ---------- Bulk generation from CSV ---------- */
+var CSV_ROWS=[];
+
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  var rows=[],cur=[],val="",inq=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inq){
+      if(c==='"'){ if(text[i+1]==='"'){val+='"';i++;} else inq=false; }
+      else val+=c;
+    } else {
+      if(c==='"') inq=true;
+      else if(c===","){cur.push(val);val="";}
+      else if(c==="\r"){}
+      else if(c==="\n"){cur.push(val);rows.push(cur);cur=[];val="";}
+      else val+=c;
+    }
+  }
+  if(val.length||cur.length){cur.push(val);rows.push(cur);}
+  return rows;
+}
+
+function loadCSV(ev){
+  var file=ev.target.files[0];
+  var btn=document.getElementById("bulk-btn"), status=document.getElementById("bulk-status");
+  if(!file){return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var rows=parseCSV(e.target.result).filter(function(r){return r.join("").trim().length;});
+    if(rows.length<2){status.textContent="Couldn't read any rows from that file.";btn.disabled=true;return;}
+    var header=rows[0].map(function(h){return h.trim().toLowerCase();});
+    function idx(names){for(var n=0;n<names.length;n++){var k=header.indexOf(names[n]);if(k>=0)return k;}return -1;}
+    var ni=idx(["name","student name","full name"]);
+    var ri=idx(["university roll no.","university roll no","roll no.","roll no","roll number","roll"]);
+    if(ni<0){status.textContent="No 'Name' column found in the CSV header.";btn.disabled=true;return;}
+    CSV_ROWS=[];
+    for(var j=1;j<rows.length;j++){
+      var nm=(rows[j][ni]||"").trim(); if(!nm) continue;
+      var rl=ri>=0?(rows[j][ri]||"").trim():"";
+      CSV_ROWS.push({name:nm,roll:rl});
+    }
+    btn.disabled=CSV_ROWS.length===0;
+    status.textContent=CSV_ROWS.length+" students loaded"+(ri<0?" (no roll column found — roll will be blank)":"")+". Form settings above apply to all. Click to generate.";
+  };
+  reader.readAsText(file);
+}
+
+function sanitize(s){return (s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+async function generateBatch(){
+  if(!CSV_ROWS.length) return;
+  var btn=document.getElementById("bulk-btn"), status=document.getElementById("bulk-status");
+  btn.disabled=true;
+  var inner=document.getElementById("stage-inner"), prev=inner.style.transform;
+  inner.style.transform="scale(1)";
+  var cert=document.getElementById("cert");
+  var jsPDF=window.jspdf.jsPDF;
+  var zip=new JSZip();
+  var fName=document.getElementById("f-name"), fRoll=document.getElementById("f-roll");
+  var origName=fName.value, origRoll=fRoll.value;
+  if(document.fonts&&document.fonts.ready){ try{await document.fonts.ready;}catch(e){} }
+  try{
+    for(var k=0;k<CSV_ROWS.length;k++){
+      var row=CSV_ROWS[k];
+      fName.value=row.name; fRoll.value=row.roll; render();
+      status.textContent="Generating "+(k+1)+" of "+CSV_ROWS.length+": "+row.name;
+      await sleep(150);
+      var canvas=await html2canvas(cert,{scale:3,useCORS:true,backgroundColor:null,width:1123,height:794});
+      var img=canvas.toDataURL("image/jpeg",0.95);
+      var pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+      pdf.addImage(img,"JPEG",0,0,297,210,undefined,"FAST");
+      var base=(row.roll?row.roll+"_":"")+row.name;
+      zip.file("SAKAR_Certificate_"+sanitize(base)+".pdf", pdf.output("blob"));
+    }
+    status.textContent="Zipping "+CSV_ROWS.length+" certificates…";
+    var content=await zip.generateAsync({type:"blob"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(content); a.download="SAKAR_Certificates.zip"; a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+    status.textContent="Done — "+CSV_ROWS.length+" certificates downloaded as SAKAR_Certificates.zip.";
+  }catch(err){
+    status.textContent="Error: "+(err&&err.message?err.message:err);
+  }finally{
+    fName.value=origName; fRoll.value=origRoll; render();
+    inner.style.transform=prev; btn.disabled=false;
+  }
 }
 
 render(); fitScale();

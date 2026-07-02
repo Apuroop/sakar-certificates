@@ -7,6 +7,9 @@ npm-debug.log*
 Child labour survey -SAKAR.pptx
 certificate-designs/
 
+# Student data — keep out of git
+*.csv
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
