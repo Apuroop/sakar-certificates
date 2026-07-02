@@ -241,8 +241,7 @@ function render(){
 
   document.getElementById("o-name").textContent=name;
 
-  var rollpart=roll?" (Roll Number <b>"+esc(roll)+"</b>)":"";
-  var para="a student of <b>"+esc(inst)+"</b>"+rollpart+" has successfully completed a Summer Internship with <b>SAKAR</b>. "
+  var para="a student of <b>"+esc(inst)+"</b> has successfully completed a Summer Internship with <b>SAKAR</b>. "
     +"During the internship, they contributed to the project "
     +"<span class='summary'>“"+esc(SUMMARY)+"”</span>, demonstrating dedication, initiative and a sincere "
     +"commitment to the cause of child welfare. We wish them every success in their future endeavours.";
@@ -254,7 +253,8 @@ function render(){
   document.getElementById("o-sig2d").textContent=document.getElementById("f-sig2d").value;
 
   var meta=[];
-  if(dur) meta.push("<span class='lbl'>Internship period:</span> <b>"+esc(dur)+"</b>");
+  if(roll) meta.push("<span class='lbl'>Student Roll Number:</span> <b>"+esc(roll)+"</b>");
+  if(dur) meta.push("<span class='lbl'>Internship Period:</span> <b>"+esc(dur)+"</b>");
   if(place) meta.push("<span class='lbl'>Place:</span> <b>"+esc(place)+"</b>");
   document.getElementById("o-meta").innerHTML=meta.join("&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;");
 }
