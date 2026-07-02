@@ -369,8 +369,8 @@ async function generateBatch(){
       var img=canvas.toDataURL("image/jpeg",0.95);
       var pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
       pdf.addImage(img,"JPEG",0,0,297,210,undefined,"FAST");
-      var base=(row.roll?row.roll+"_":"")+row.name;
-      zip.file("SAKAR_Certificate_"+sanitize(base)+".pdf", pdf.output("blob"));
+      var fn=sanitize(row.name)+(row.roll?"_"+sanitize(row.roll):"");
+      zip.file(fn+".pdf", pdf.output("blob"));
     }
     status.textContent="Zipping "+CSV_ROWS.length+" certificates…";
     var content=await zip.generateAsync({type:"blob"});
