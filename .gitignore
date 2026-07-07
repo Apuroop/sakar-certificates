@@ -10,6 +10,9 @@ certificate-designs/
 # Student data — keep out of git
 *.csv
 
+# Generated certificate output
+final-certificates/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
